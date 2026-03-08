@@ -208,12 +208,7 @@ function momentum_predictor!(field::FlowField, field_old::FlowField,
         rho_f = (field_old.rho[i-1,j] + field_old.rho[i,j]) * 0.5
 
         # ── 対角係数 ──
-        diag = rho_f / dt + 2.0*ax_u
-        # 上下壁のゴーストセル（すべりなし）: 対角が +ay_u 増える
-        diag += (j == 1 || j == Ny) ? 2.0*ay_u : 2.0*ay_u
-        # ↑ j=1 と j=Ny では d²u/dy² の係数が -3/dy² → diag に 3*ay_u
-        #   それ以外は -2/dy² → diag に 2*ay_u
-        # 正しく分岐する
+        # j=1 と j=Ny ではゴーストセルにより d²u/dy² の係数が -3/dy²
         if j == 1 || j == Ny
             diag = rho_f / dt + 2.0*ax_u + 3.0*ay_u
         else
@@ -254,8 +249,8 @@ function momentum_predictor!(field::FlowField, field_old::FlowField,
 
         # ∂u/∂y: ゴーストセルによるすべりなし
         if j == 1
-            u_above = (j < Ny) ? field_old.u[i,j+1] : -field_old.u[i,j]
-            u_below = -field_old.u[i,1]           # ghost: no-slip bottom
+            u_above = field_old.u[i, j+1]         # j+1 ≤ Ny (guaranteed since j==1 and Ny≥2)
+            u_below = -field_old.u[i, 1]          # ghost: no-slip bottom
         elseif j == Ny
             u_above = -field_old.u[i,Ny]          # ghost: no-slip top
             u_below = field_old.u[i,j-1]
@@ -342,8 +337,8 @@ function momentum_predictor!(field::FlowField, field_old::FlowField,
 
         # ∂v/∂x: ゴーストセルによるすべりなし
         if i == 1
-            v_right = (i < Nx) ? field_old.v[i+1,j] : -field_old.v[i,j]
-            v_left  = -field_old.v[1,j]           # ghost: no-slip left
+            v_right = field_old.v[i+1, j]         # i+1 ≤ Nx (guaranteed since i==1 and Nx≥2)
+            v_left  = -field_old.v[1, j]          # ghost: no-slip left
         elseif i == Nx
             v_right = -field_old.v[Nx,j]          # ghost: no-slip right
             v_left  = field_old.v[i-1,j]
